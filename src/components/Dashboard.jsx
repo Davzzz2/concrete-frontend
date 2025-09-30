@@ -67,10 +67,13 @@ export default function Dashboard() {
       <nav className="bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Concrete Pour Tracker
-              </h1>
+            <div className="flex items-center gap-3">
+              <img
+                src="/CPT.png"
+                alt="CPT Logo"
+                className="h-8 w-auto object-contain drop-shadow-sm"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Welcome, {username}
               </p>
