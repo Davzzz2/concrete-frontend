@@ -41,13 +41,28 @@ export default function PoursTable({ pours, onDeletePour }) {
   const handleGeneratePDF = async (pour) => {
     const doc = new jsPDF({ unit: 'pt', format: 'letter' })
 
-    // Header bar
-    doc.setFillColor(30, 41, 59)
-    doc.rect(0, 0, doc.internal.pageSize.getWidth(), 80, 'F')
+    // Tailwind-inspired palette to match site
+    const colors = {
+      headerBg: [15, 23, 42],       // dark.bg
+      headerText: [255, 255, 255],
+      cardBg: [30, 41, 59],         // dark.card
+      border: [51, 65, 85],         // dark.border
+      tableHead: [30, 41, 59],
+      text: [15, 23, 42],
+      muted: [100, 116, 139],
+      rowAlt: [248, 250, 252],
+      accent: [37, 99, 235]         // blue-600
+    }
 
-    // Logo (load as data URL to avoid CORS)
+    // Header bar
+    const pageW = doc.internal.pageSize.getWidth()
+    doc.setFillColor(...colors.headerBg)
+    doc.rect(0, 0, pageW, 90, 'F')
+
+    // Logo + brand
     let headerX = 40
-    let headerY = 20
+    let headerY = 25
+    let hasLogo = false
     try {
       const resp = await fetch(`${import.meta.env.BASE_URL}CPT.png`)
       if (resp.ok) {
@@ -57,39 +72,34 @@ export default function PoursTable({ pours, onDeletePour }) {
           reader.onload = () => resolve(reader.result)
           reader.readAsDataURL(blob)
         })
-        doc.addImage(dataUrl, 'PNG', headerX, headerY, 120, 40)
-      } else {
-        // fallback: text title
-        doc.setFontSize(18)
-        doc.setTextColor(255, 255, 255)
-        doc.text('Concrete Pour Tracker', headerX, 50)
+        doc.addImage(dataUrl, 'PNG', headerX, headerY, 120, 45)
+        hasLogo = true
       }
-    } catch (_) {
-      doc.setFontSize(18)
-      doc.setTextColor(255, 255, 255)
-      doc.text('Concrete Pour Tracker', headerX, 50)
-    }
+    } catch (_) {}
 
-    // Company info on right
-    const pageW = doc.internal.pageSize.getWidth()
+    doc.setTextColor(...colors.headerText)
+    doc.setFontSize(18)
+    if (!hasLogo) {
+      doc.text('Concrete Pour Tracker', headerX, 55)
+    }
     doc.setFontSize(10)
-    doc.setTextColor(255, 255, 255)
-    const infoRightX = pageW - 40
-    const infoLines = [
-      'Concrete Pour Receipt',
+    const rightX = pageW - 40
+    const meta = [
       `Date: ${new Date(pour.date).toLocaleDateString()}`,
       `Pour ID: ${pour.pour_id}`
     ]
-    infoLines.reverse().forEach((line, i) => {
-      const y = 60 - i * 14
-      const textW = doc.getTextWidth(line)
-      doc.text(line, infoRightX - textW, y)
+    meta.reverse().forEach((line, i) => {
+      const y = 65 - i * 14
+      const tw = doc.getTextWidth(line)
+      doc.text(line, rightX - tw, y)
     })
 
-    // Body
-    doc.setTextColor(30, 41, 59)
-    doc.setFontSize(12)
+    // Section title
+    doc.setFontSize(14)
+    doc.setTextColor(...colors.text)
+    doc.text('Details', 40, 120)
 
+    // Items table
     const rows = []
     rows.push(['Area (ft²)', formatNumber(pour.area)])
     rows.push(['Price per ft²', formatCurrency(pour.price_per_sqft)])
@@ -98,7 +108,6 @@ export default function PoursTable({ pours, onDeletePour }) {
     rows.push(['Fuel', formatCurrency(pour.fuel_cost)])
     rows.push(['Repairs', formatCurrency(pour.repairs_cost)])
 
-    // Consumables breakdown
     if (Array.isArray(pour.consumable_items) && pour.consumable_items.length > 0) {
       rows.push(['Consumables', ''])
       pour.consumable_items.forEach((ci) => {
@@ -117,48 +126,52 @@ export default function PoursTable({ pours, onDeletePour }) {
     const profit = totalPrice - totalCost
 
     autoTable(doc, {
-      startY: 110,
+      startY: 130,
       head: [['Item', 'Amount']],
       body: rows,
-      styles: { fontSize: 11, cellPadding: 6 },
-      headStyles: { fillColor: [30, 41, 59] },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { fontSize: 11, cellPadding: 6, lineColor: colors.border, lineWidth: 0.3 },
+      headStyles: { fillColor: colors.tableHead, textColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: colors.rowAlt },
       columnStyles: {
-        0: { cellWidth: 300 },
+        0: { cellWidth: 320 },
         1: { halign: 'right' }
       }
     })
 
-    // Totals card
-    const y = doc.lastAutoTable.finalY + 20
+    // Summary card matching site style
+    const y = doc.lastAutoTable.finalY + 24
     const cardW = pageW - 80
-    const cardH = 100
-    doc.setDrawColor(226, 232, 240)
-    doc.setFillColor(248, 250, 252)
-    doc.roundedRect(40, y, cardW, cardH, 8, 8, 'FD')
-    doc.setFontSize(12)
-    doc.setTextColor(30, 41, 59)
-    doc.text('Summary', 56, y + 24)
-    doc.setFontSize(11)
-    const summaryRows = [
-      ['Total Cost', formatCurrency(totalCost)],
-      ['Total Price', formatCurrency(totalPrice)],
-      ['Profit', formatCurrency(profit)]
-    ]
+    const cardH = 110
+    doc.setDrawColor(...colors.border)
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(40, y, cardW, cardH, 10, 10, 'FD')
+    
+    // Title with accent underline
+    doc.setTextColor(...colors.text)
+    doc.setFontSize(13)
+    doc.text('Summary', 56, y + 26)
+    doc.setDrawColor(...colors.accent)
+    doc.setLineWidth(2)
+    doc.line(56, y + 30, 120, y + 30)
+
     autoTable(doc, {
-      startY: y + 30,
-      body: summaryRows,
+      startY: y + 36,
+      body: [
+        ['Total Cost', formatCurrency(totalCost)],
+        ['Total Price', formatCurrency(totalPrice)],
+        ['Profit', formatCurrency(profit)]
+      ],
       theme: 'plain',
-      styles: { fontSize: 11, cellPadding: 4 },
+      styles: { fontSize: 12, cellPadding: 5 },
       columnStyles: {
-        0: { cellWidth: 120 },
-        1: { halign: 'right', cellWidth: 120 }
+        0: { cellWidth: 140 },
+        1: { halign: 'right', cellWidth: 160 }
       }
     })
 
-    // Footer
+    // Footer muted
     doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(...colors.muted)
     doc.text('Generated by Concrete Pour Tracker', 40, doc.internal.pageSize.getHeight() - 30)
 
     doc.save(`receipt-${pour.pour_id}.pdf`)
