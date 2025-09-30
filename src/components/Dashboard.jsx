@@ -69,7 +69,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <img
-                src="/CPT.png"
+                src={`${import.meta.env.BASE_URL}CPT.png`}
                 alt="CPT Logo"
                 className="h-8 w-auto object-contain drop-shadow-sm"
                 onError={(e) => { e.currentTarget.style.display = 'none' }}
