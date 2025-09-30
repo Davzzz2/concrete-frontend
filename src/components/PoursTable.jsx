@@ -1,4 +1,6 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, FileText } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 export default function PoursTable({ pours, onDeletePour }) {
   const calculateTotalCost = (pour) => {
@@ -34,6 +36,74 @@ export default function PoursTable({ pours, onDeletePour }) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value)
+  }
+
+  const handleGeneratePDF = async (pour) => {
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+
+    // Try to add logo if available under /CPT.png (public root)
+    try {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.src = '/CPT.png'
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej })
+      doc.addImage(img, 'PNG', 40, 30, 100, 40)
+    } catch (e) {
+      // If logo missing, skip
+    }
+
+    doc.setFontSize(18)
+    doc.text('Concrete Pour Receipt', 40, 95)
+    doc.setFontSize(11)
+    doc.text(`Pour ID: ${pour.pour_id}`, 40, 115)
+    doc.text(`Date: ${new Date(pour.date).toLocaleDateString()}`, 40, 130)
+
+    const rows = []
+    rows.push(['Area (ft²)', formatNumber(pour.area)])
+    rows.push(['Price per ft²', formatCurrency(pour.price_per_sqft)])
+    rows.push(['Labor', formatCurrency(pour.labor_cost)])
+    rows.push(['Equipment', formatCurrency(pour.equipment_cost)])
+    rows.push(['Fuel', formatCurrency(pour.fuel_cost)])
+    rows.push(['Repairs', formatCurrency(pour.repairs_cost)])
+
+    // Consumables breakdown
+    if (Array.isArray(pour.consumable_items) && pour.consumable_items.length > 0) {
+      rows.push(['Consumables (items):', ''])
+      pour.consumable_items.forEach((ci) => {
+        rows.push([`  - ${ci.name}`, formatCurrency(ci.price)])
+      })
+      rows.push(['Consumables Total', formatCurrency(pour.consumables_cost)])
+    } else {
+      rows.push(['Consumables', formatCurrency(pour.consumables_cost)])
+    }
+
+    rows.push(['Lunch', formatCurrency(pour.lunch_cost)])
+    rows.push(['Misc', formatCurrency(pour.misc_cost)])
+
+    const totalCost = calculateTotalCost(pour)
+    const totalPrice = calculateTotalPrice(pour)
+    const profit = totalPrice - totalCost
+
+    autoTable(doc, {
+      startY: 150,
+      head: [['Item', 'Amount']],
+      body: rows,
+      styles: { fontSize: 11 },
+      headStyles: { fillColor: [30, 41, 59] }
+    })
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 20,
+      body: [
+        ['Total Cost', formatCurrency(totalCost)],
+        ['Total Price', formatCurrency(totalPrice)],
+        ['Profit', formatCurrency(profit)]
+      ],
+      styles: { fontSize: 12, cellStyles: { halign: 'right' } },
+      theme: 'plain'
+    })
+
+    doc.save(`receipt-${pour.pour_id}.pdf`)
   }
 
   if (pours.length === 0) {
@@ -154,7 +224,14 @@ export default function PoursTable({ pours, onDeletePour }) {
                   <td className={`px-4 py-3 text-sm font-semibold text-right ${isProfit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCurrency(profit)}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => handleGeneratePDF(pour)}
+                      className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                      aria-label="Generate PDF"
+                    >
+                      <FileText size={16} />
+                    </button>
                     <button
                       onClick={() => onDeletePour(pour.id)}
                       className="inline-flex items-center justify-center p-2 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"

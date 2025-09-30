@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
+import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
+import { API_URL } from '../config'
 
 export default function PourForm({ onAddPour }) {
+  const { token } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     pour_id: '',
@@ -16,6 +20,23 @@ export default function PourForm({ onAddPour }) {
     lunch_cost: '',
     misc_cost: ''
   })
+  const [consumablesCatalog, setConsumablesCatalog] = useState([])
+  const [consumableItems, setConsumableItems] = useState([])
+
+  const fetchConsumables = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/consumables`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setConsumablesCatalog(res.data)
+    } catch (e) {
+      // noop
+    }
+  }
+
+  useEffect(() => {
+    fetchConsumables()
+  }, [token])
 
   const handleChange = (e) => {
     setFormData({
@@ -30,13 +51,14 @@ export default function PourForm({ onAddPour }) {
 
     const success = await onAddPour({
       ...formData,
+      consumable_items: consumableItems.map(ci => ({ name: ci.name, price: parseFloat(ci.price) || 0 })),
       area: parseFloat(formData.area),
       price_per_sqft: parseFloat(formData.price_per_sqft),
       labor_cost: parseFloat(formData.labor_cost),
       equipment_cost: parseFloat(formData.equipment_cost),
       fuel_cost: parseFloat(formData.fuel_cost),
       repairs_cost: parseFloat(formData.repairs_cost),
-      consumables_cost: parseFloat(formData.consumables_cost),
+      consumables_cost: consumableItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0),
       lunch_cost: parseFloat(formData.lunch_cost),
       misc_cost: parseFloat(formData.misc_cost)
     })
@@ -55,6 +77,7 @@ export default function PourForm({ onAddPour }) {
         lunch_cost: '',
         misc_cost: ''
       })
+      setConsumableItems([])
     }
 
     setLoading(false)
@@ -192,20 +215,83 @@ export default function PourForm({ onAddPour }) {
           />
         </div>
 
-        <div>
+        <div className="md:col-span-2 lg:col-span-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Consumables ($)
+            Consumables
           </label>
-          <input
-            type="number"
-            name="consumables_cost"
-            value={formData.consumables_cost}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            required
-          />
+          <div className="space-y-3">
+            {consumableItems.map((item, idx) => (
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <select
+                  value={item.name}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    const found = consumablesCatalog.find(c => c.name === name)
+                    const next = [...consumableItems]
+                    next[idx] = { name, price: found ? found.defaultPrice : 0 }
+                    setConsumableItems(next)
+                  }}
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Select consumable</option>
+                  {consumablesCatalog.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={item.price}
+                  onChange={(e) => {
+                    const next = [...consumableItems]
+                    next[idx] = { ...next[idx], price: e.target.value }
+                    setConsumableItems(next)
+                  }}
+                  step="0.01"
+                  min="0"
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setConsumableItems(consumableItems.filter((_, i) => i !== idx))}
+                  className="px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setConsumableItems([...consumableItems, { name: '', price: '' }])}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200"
+              >
+                Add Item
+              </button>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                Total: ${consumableItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
+              </div>
+            </div>
+            {consumableItems.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-700 dark:text-gray-300">
+                      <th className="py-2">Item</th>
+                      <th className="py-2 text-right">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-dark-border">
+                    {consumableItems.map((i, n) => (
+                      <tr key={n}>
+                        <td className="py-2 text-gray-900 dark:text-white">{i.name || '-'}</td>
+                        <td className="py-2 text-right text-gray-900 dark:text-white">${(parseFloat(i.price) || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>

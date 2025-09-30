@@ -7,6 +7,7 @@ import PourForm from './PourForm'
 import PoursTable from './PoursTable'
 import Summary from './Summary'
 import { API_URL } from '../config'
+import ConsumablesManager from './ConsumablesManager'
 
 export default function Dashboard() {
   const [pours, setPours] = useState([])
@@ -102,6 +103,9 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Consumables Manager */}
+            <ConsumablesManager />
+
             {/* Add Pour Form */}
             <PourForm onAddPour={handleAddPour} />
 
