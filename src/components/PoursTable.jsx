@@ -49,7 +49,7 @@ export default function PoursTable({ pours, onDeletePour }) {
     let headerX = 40
     let headerY = 20
     try {
-      const resp = await fetch('/CPT.png')
+      const resp = await fetch(`${import.meta.env.BASE_URL}CPT.png`)
       if (resp.ok) {
         const blob = await resp.blob()
         const reader = new FileReader()
