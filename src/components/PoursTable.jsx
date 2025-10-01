@@ -1,8 +1,8 @@
-import { Trash2, FileText } from 'lucide-react'
+import { Trash2, FileText, Edit2 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-export default function PoursTable({ pours, onDeletePour }) {
+export default function PoursTable({ pours, onDeletePour, onEditPour }) {
   const calculateTotalCost = (pour) => {
     return (
       pour.labor_cost +
@@ -198,7 +198,7 @@ export default function PoursTable({ pours, onDeletePour }) {
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[1200px]">
           <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-dark-border">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -291,21 +291,33 @@ export default function PoursTable({ pours, onDeletePour }) {
                   <td className={`px-4 py-3 text-sm font-semibold text-right ${isProfit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCurrency(profit)}
                   </td>
-                  <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => handleGeneratePDF(pour)}
-                      className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
-                      aria-label="Generate PDF"
-                    >
-                      <FileText size={16} />
-                    </button>
-                    <button
-                      onClick={() => onDeletePour(pour.id)}
-                      className="inline-flex items-center justify-center p-2 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
-                      aria-label="Delete pour"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => onEditPour && onEditPour(pour)}
+                        className="inline-flex items-center justify-center p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors"
+                        aria-label="Edit pour"
+                        title="Edit pour"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleGeneratePDF(pour)}
+                        className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                        aria-label="Generate PDF"
+                        title="Generate PDF"
+                      >
+                        <FileText size={16} />
+                      </button>
+                      <button
+                        onClick={() => onDeletePour(pour.id)}
+                        className="inline-flex items-center justify-center p-2 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                        aria-label="Delete pour"
+                        title="Delete pour"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
