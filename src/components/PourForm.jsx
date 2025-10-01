@@ -51,14 +51,22 @@ export default function PourForm({ onAddPour }) {
 
     const success = await onAddPour({
       ...formData,
-      consumable_items: consumableItems.map(ci => ({ name: ci.name, price: parseFloat(ci.price) || 0 })),
+      consumable_items: consumableItems.map(ci => ({ 
+        name: ci.name, 
+        price: parseFloat(ci.price) || 0,
+        quantity: parseFloat(ci.quantity) || 1
+      })),
       area: parseFloat(formData.area),
       price_per_sqft: parseFloat(formData.price_per_sqft),
       labor_cost: parseFloat(formData.labor_cost),
       equipment_cost: parseFloat(formData.equipment_cost),
       fuel_cost: parseFloat(formData.fuel_cost),
       repairs_cost: parseFloat(formData.repairs_cost),
-      consumables_cost: consumableItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0),
+      consumables_cost: consumableItems.reduce((s, i) => {
+        const price = parseFloat(i.price) || 0;
+        const quantity = parseFloat(i.quantity) || 1;
+        return s + (price * quantity);
+      }, 0),
       lunch_cost: parseFloat(formData.lunch_cost),
       misc_cost: parseFloat(formData.misc_cost)
     })
@@ -221,14 +229,14 @@ export default function PourForm({ onAddPour }) {
           </label>
           <div className="space-y-3">
             {consumableItems.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <select
                   value={item.name}
                   onChange={(e) => {
                     const name = e.target.value
                     const found = consumablesCatalog.find(c => c.name === name)
                     const next = [...consumableItems]
-                    next[idx] = { name, price: found ? found.defaultPrice : 0 }
+                    next[idx] = { name, price: found ? found.defaultPrice : 0, quantity: 1 }
                     setConsumableItems(next)
                   }}
                   className="px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -240,6 +248,7 @@ export default function PourForm({ onAddPour }) {
                 </select>
                 <input
                   type="number"
+                  placeholder="Price ($)"
                   value={item.price}
                   onChange={(e) => {
                     const next = [...consumableItems]
@@ -248,6 +257,19 @@ export default function PourForm({ onAddPour }) {
                   }}
                   step="0.01"
                   min="0"
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                />
+                <input
+                  type="number"
+                  placeholder="Qty"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const next = [...consumableItems]
+                    next[idx] = { ...next[idx], quantity: e.target.value }
+                    setConsumableItems(next)
+                  }}
+                  step="1"
+                  min="1"
                   className="px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 />
                 <button
@@ -262,13 +284,17 @@ export default function PourForm({ onAddPour }) {
             <div className="flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => setConsumableItems([...consumableItems, { name: '', price: '' }])}
+                onClick={() => setConsumableItems([...consumableItems, { name: '', price: '', quantity: 1 }])}
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200"
               >
                 Add Item
               </button>
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                Total: ${consumableItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
+                Total: ${consumableItems.reduce((s, i) => {
+                  const price = parseFloat(i.price) || 0;
+                  const quantity = parseFloat(i.quantity) || 1;
+                  return s + (price * quantity);
+                }, 0).toFixed(2)}
               </div>
             </div>
             {consumableItems.length > 0 && (
@@ -278,15 +304,24 @@ export default function PourForm({ onAddPour }) {
                     <tr className="text-left text-gray-700 dark:text-gray-300">
                       <th className="py-2">Item</th>
                       <th className="py-2 text-right">Price</th>
+                      <th className="py-2 text-right">Qty</th>
+                      <th className="py-2 text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-dark-border">
-                    {consumableItems.map((i, n) => (
-                      <tr key={n}>
-                        <td className="py-2 text-gray-900 dark:text-white">{i.name || '-'}</td>
-                        <td className="py-2 text-right text-gray-900 dark:text-white">${(parseFloat(i.price) || 0).toFixed(2)}</td>
-                      </tr>
-                    ))}
+                    {consumableItems.map((i, n) => {
+                      const price = parseFloat(i.price) || 0;
+                      const quantity = parseFloat(i.quantity) || 1;
+                      const total = price * quantity;
+                      return (
+                        <tr key={n}>
+                          <td className="py-2 text-gray-900 dark:text-white">{i.name || '-'}</td>
+                          <td className="py-2 text-right text-gray-900 dark:text-white">${price.toFixed(2)}</td>
+                          <td className="py-2 text-right text-gray-900 dark:text-white">{quantity}</td>
+                          <td className="py-2 text-right text-gray-900 dark:text-white">${total.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
