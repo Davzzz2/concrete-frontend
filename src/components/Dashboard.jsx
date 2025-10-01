@@ -8,10 +8,13 @@ import PoursTable from './PoursTable'
 import Summary from './Summary'
 import { API_URL } from '../config'
 import ConsumablesManager from './ConsumablesManager'
+import EditPourModal from './EditPourModal'
 
 export default function Dashboard() {
   const [pours, setPours] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editingPour, setEditingPour] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const { token, username, logout } = useAuth()
   const { isDark, toggleTheme } = useTheme()
 
@@ -59,6 +62,22 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error deleting pour:', error)
     }
+  }
+
+  const handleEditPour = (pour) => {
+    setEditingPour(pour)
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = (updatedPour) => {
+    setPours(pours.map(p => p.id === updatedPour.id ? { ...p, ...updatedPour } : p))
+    setEditingPour(null)
+    setIsEditModalOpen(false)
+  }
+
+  const handleCloseEdit = () => {
+    setEditingPour(null)
+    setIsEditModalOpen(false)
   }
 
   return (
@@ -116,10 +135,22 @@ export default function Dashboard() {
             <Summary pours={pours} />
 
             {/* Pours Table */}
-            <PoursTable pours={pours} onDeletePour={handleDeletePour} />
+            <PoursTable 
+              pours={pours} 
+              onDeletePour={handleDeletePour} 
+              onEditPour={handleEditPour}
+            />
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      <EditPourModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEdit}
+        pour={editingPour}
+        onSave={handleSaveEdit}
+      />
     </div>
   )
 }
