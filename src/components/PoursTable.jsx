@@ -111,14 +111,16 @@ export default function PoursTable({ pours, onDeletePour }) {
     if (Array.isArray(pour.consumable_items) && pour.consumable_items.length > 0) {
       rows.push(['Consumables', ''])
       pour.consumable_items.forEach((ci) => {
-        rows.push([`  · ${ci.name}`, formatCurrency(ci.price)])
+        const quantity = ci.quantity || 1;
+        const total = (ci.price || 0) * quantity;
+        rows.push([`  · ${ci.name} (${quantity} × $${(ci.price || 0).toFixed(2)})`, formatCurrency(total)])
       })
       rows.push(['Consumables Total', formatCurrency(pour.consumables_cost)])
     } else {
       rows.push(['Consumables', formatCurrency(pour.consumables_cost)])
     }
 
-    rows.push(['Lunch', formatCurrency(pour.lunch_cost)])
+    // Note: lunch removed from table and PDF
     rows.push(['Misc', formatCurrency(pour.misc_cost)])
 
     const totalCost = calculateTotalCost(pour)
@@ -227,9 +229,6 @@ export default function PoursTable({ pours, onDeletePour }) {
                 Consumables
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Lunch
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                 Misc
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -279,9 +278,6 @@ export default function PoursTable({ pours, onDeletePour }) {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-right">
                     {formatCurrency(pour.consumables_cost)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-right">
-                    {formatCurrency(pour.lunch_cost)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-right">
                     {formatCurrency(pour.misc_cost)}
