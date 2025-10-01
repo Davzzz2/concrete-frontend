@@ -17,7 +17,6 @@ export default function PourForm({ onAddPour }) {
     fuel_cost: '',
     repairs_cost: '',
     consumables_cost: '',
-    lunch_cost: '',
     misc_cost: ''
   })
   const [consumablesCatalog, setConsumablesCatalog] = useState([])
@@ -67,7 +66,7 @@ export default function PourForm({ onAddPour }) {
         const quantity = parseFloat(i.quantity) || 1;
         return s + (price * quantity);
       }, 0),
-      lunch_cost: parseFloat(formData.lunch_cost),
+      lunch_cost: 0,
       misc_cost: parseFloat(formData.misc_cost)
     })
 
@@ -82,7 +81,6 @@ export default function PourForm({ onAddPour }) {
         fuel_cost: '',
         repairs_cost: '',
         consumables_cost: '',
-        lunch_cost: '',
         misc_cost: ''
       })
       setConsumableItems([])
@@ -329,21 +327,6 @@ export default function PourForm({ onAddPour }) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Lunch ($)
-          </label>
-          <input
-            type="number"
-            name="lunch_cost"
-            value={formData.lunch_cost}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            required
-          />
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
